@@ -11,10 +11,10 @@ mtrx3 = []
 
 def init_matrix():
     """
-    Initialize matrxi from here, we do initialize three matrx from here
+    Initialize matrix from here, we do initialize three matrix from here
         1. mtrx1 - input matrix
         2. mtrx2 - input matrix
-        3. mtrx3 - outout matrix
+        3. mtrx3 - output matrix
     """
     global mtrx1
     mtrx1 = [
@@ -38,7 +38,7 @@ def init_matrix():
 def distribute_matrix_data():
     """
     Distribute row of first matrix and whole second matrix to salves, this done
-    via master node. Then salves caculate single row of final matrix and send
+    via master node. Then salves calculate single row of final matrix and send
     result back to master
     """
     pid = 1
@@ -50,7 +50,7 @@ def distribute_matrix_data():
 
 def calculate_matrix_row(x, y):
     """
-    Generate single row of final matrix. This funcaiont will be called by
+    Generate single row of final matrix. This function will be called by
     each and every slave with their matrix data. For an example
 
     x = [1, 2, 3, 4]
@@ -86,7 +86,7 @@ def calculate_matrix_row(x, y):
 
 def assemble_matrix_data():
     """
-    Assemble returing valus form salves and generate final matrix. Slaves
+    Assemble returning values form salves and generate final matrix. Slaves
     calculate single row of final matrix
     """
     pid = 1
@@ -101,7 +101,7 @@ def master_operation():
     """
     Do operation of master node, we have to do following this from here
         1. distribute matrix data to slaves
-        2. assemble salves returing valus and generate final matrix
+        2. assemble salves returning values and generate final matrix
     """
     distribute_matrix_data()
     assemble_matrix_data()
@@ -113,7 +113,7 @@ def slave_operation():
     Do operation of slave nodes, we have to do
         1. Gather the data sending from master
         2. Calculate the single fow of final matrix
-        3. Send the calcuated row back to master
+        3. Send the calculated matrix row back to master
     """
     # receive data from master node
     x = comm.recv(source=0, tag=1)
@@ -127,7 +127,7 @@ def slave_operation():
 if __name__ == '__main__':
     """
     Main method here, we have to do
-        1. initilize matrxies
+        1. initialize all matrix
         2. Master/Salve operations
     """
     init_matrix()
