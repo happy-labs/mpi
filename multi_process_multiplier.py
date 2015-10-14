@@ -14,13 +14,13 @@ def init_matrix():
     Initialize matrxi from here, we do initialize three matrx from here
         1. mtrx1 - input matrix
         2. mtrx2 - input matrix
-        3. mtrx3 - outout matrix
+        3. mtrx3 - output matrix
     """
     global mtrx1
     mtrx1 = [
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-        [9, 10, 11, 12],
+        [1, 2, 3, 4, 5, 6, 9],
+        [5, 6, 7, 8, 4, 3, 5],
+        [9, 10, 11, 12, 3, 2, 2],
     ]
 
     global mtrx2
@@ -29,46 +29,48 @@ def init_matrix():
         [5, 6, 7],
         [2, 2, 7],
         [5, 6, 9],
+        [5, 6, 9],
+        [5, 6, 9],
+        [5, 6, 9],
     ]
 
     global mtrx3
     mtrx3 = [0] * len(mtrx1)
 
 
-def calculate_matrix_row(x, y):
+def calculate_matrix_row(X, Y):
     """
     Generate single row of final matrix. This funcaiont will be called by
     each and every slave with their matrix data. For an example
 
-    x = [1, 2, 3, 4]
+    x = [
+            [1, 2, 3, 4],
+            [3, 2, 3, 7],
+        ]
+
     y = [
             [1, 2, 3],
             [5, 6, 7],
             [2, 2, 7],
             [5, 6, 9],
         ]
-    z = [(1*1 + 2*5 + 3*2 + 4*5), (1*2 + 2*6 + 3*2 + 4*6), --, --]
+
+    z = [
+            [(1*1 + 2*5 + 3*2 + 4*5), (1*2 + 2*6 + 3*2 + 4*6), --, --],
+            [(3*1 + 2*5 + 3*2 + 7*5), (3*2 + 2*6 + 3*2 + 7*6), --, --]
+        ]
 
     Args:
-        x: first row of mtrx1
+        x: mtrx1
         y: mtrx2
 
     Returns:
-        z: calculated row of final matrix
+        z: calculated matrix part
     """
-    # matrix row size is equals to row size of x(second matrix)
-    # we create list and fill with 0 here
-    z = [0] * len(y[0])
+    Z = [[sum(a * b for a, b in zip(X_row, Y_col)) for Y_col in zip(*Y)]
+            for X_row in X]
 
-    itr = 0
-    for i in x:
-        ntr = 0
-        for j in y[itr]:
-            z[ntr] = z[ntr] + i * j
-            ntr = ntr + 1
-        itr = itr + 1
-
-    return z
+    return Z
 
 
 def distribute_matrix_data():
@@ -77,8 +79,14 @@ def distribute_matrix_data():
     via master node. Then salves caculate single row of final matrix and send
     result back to master
     """
+    # split matrix according to workers count
+    n = max(1, workers)
+    l = [mtrx1[i:i + n] for i in range(0, len(mtrx1), n)]
+
+    print(l)
+
     pid = 1
-    for row in mtrx1:
+    for row in l:
         comm.send(row, dest=pid, tag=1)
         comm.send(mtrx2, dest=pid, tag=2)
         pid = pid + 1
@@ -90,11 +98,15 @@ def assemble_matrix_data():
     calculate single row of final matrix
     """
     pid = 1
+    l = []
     for n in range(workers):
         row = comm.recv(source=pid, tag=pid)
-        mtrx3[pid - 1] = row
+        l = l + row
+        #mtrx3[pid - 1] = row
         print('master', rank, row)
         pid = pid + 1
+
+    print(l)
 
 
 def master_operation():
