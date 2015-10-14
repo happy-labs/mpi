@@ -8,4 +8,5 @@ pip install mpi4py
 pip install numpy 
 
 # run
-mpiexec -n 4 python matrix_multiplication.py
+mpiexec -n <no of processes> python matrix_multiplier.py
+mpiexec -n 4 python matrix_multiplier.py
