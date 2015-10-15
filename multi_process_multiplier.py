@@ -8,6 +8,8 @@ mtrx1 = []
 mtrx2 = []
 mtrx3 = []
 
+N = 500
+
 
 def init_matrix():
     """
