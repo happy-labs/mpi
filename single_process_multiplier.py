@@ -10,7 +10,8 @@ N = 500
 mtrx1 = [[randint(0, 9) for i in range(N)] for j in range(N)]
 mtrx2 = [[randint(0, 9) for i in range(N)] for j in range(N)]
 
-Z = [[0] * N for i in range(N)]
+#Z = [[0] * N for i in range(N)]
+Z = [[0] * len(mtrx2[0]) for i in range(len(mtrx1))]
 
 i = 0
 for a in mtrx1:

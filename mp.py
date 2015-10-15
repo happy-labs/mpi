@@ -9,7 +9,7 @@ mtrx1 = []
 mtrx2 = []
 mtrx3 = []
 
-N = 5
+N = 500
 
 
 def init_matrix():
@@ -68,22 +68,28 @@ def distribute_matrix_data():
     done via master node. Then salves caculate a sub matrix by multiplying
     incoming matrix and send result back to master
     """
-    # split matrix according to workers count
-    n = max(1, workers)
-    rows = [mtrx1[i:i + n] for i in range(0, len(mtrx1), n)]
+    def split_matrix(seq, p):
+        """
+        Split matrix into small parts according to the no of workers. devided
+        parts will be send to slaves by master node
+        """
+        rows = []
+        n = len(seq) / p
+        r = len(seq) % p
+        b, e = 0, n + min(1, r)
+        for i in range(p):
+            rows.append(seq[b:e])
+            r = max(0, r - 1)
+            b, e = e, e + n + min(1, r)
 
-    # this means matrix devided to un equal parts
-    # we have to deistribute unequl part to master node, master node will do
-    # multiplicaiton on it
-    if len(mtrx1) % workers != 0:
-        comm.send(rows[-1], dest=0, tag=1)
-        comm.send(mtrx2, dest=0, tag=2)
-        del rows[-1]
+        return rows
+
+    rows = split_matrix(mtrx1, workers)
 
     pid = 1
     for row in rows:
-        comm.send(row, dest=pid, tag=11)
-        comm.send(mtrx2, dest=pid, tag=22)
+        comm.send(row, dest=pid, tag=1)
+        comm.send(mtrx2, dest=pid, tag=2)
         pid = pid + 1
 
 
@@ -100,35 +106,43 @@ def assemble_matrix_data():
         mtrx3 = mtrx3 + row
         pid = pid + 1
 
-    # this means matrix devided to un equal parts
-    # master node also doing some operation here
-    if len(mtrx1) % workers != 0:
-        row = comm.recv(source=0, tag=0)
-        mtrx3 = mtrx3 + row
-
     print(mtrx3)
 
 
-init_matrix()
-if rank == 0:
+def master_operation():
+    """
+    Do operation of master node, we have to do following this from here
+        1. distribute matrix data to slaves
+        2. assemble salves returing valus and generate final matrix
+    """
     distribute_matrix_data()
-
-    # this means matrix devided to un equal parts
-    # in here we have to do some calculation in master node as well
-    if len(mtrx1) % workers != 0:
-        x = comm.recv(source=0, tag=1)
-        y = comm.recv(source=0, tag=2)
-
-        # calculate matrx rows and send it back to master
-        z = multiply_matrix(x, y)
-        comm.send(z, dest=0, tag=0)
-
     assemble_matrix_data()
-else:
-    # receive data from master node
-    x = comm.recv(source=0, tag=11)
-    y = comm.recv(source=0, tag=21)
 
-    # calculate matrx rows and send it back to master
+
+def slave_operation():
+    """
+    Do operation of slave nodes, we have to do
+        1. Gather the data sending from master
+        2. Calculate the single fow of final matrix
+        3. Send the calcuated row back to master
+    """
+    # receive data from master node
+    x = comm.recv(source=0, tag=1)
+    y = comm.recv(source=0, tag=2)
+
+    # multiply the received matrixes and send the result back to master
     z = multiply_matrix(x, y)
     comm.send(z, dest=0, tag=rank)
+
+
+if __name__ == '__main__':
+    """
+    Main method here, we have to do
+        1. initilize matrxies
+        2. Master/Salve operations
+    """
+    init_matrix()
+    if rank == 0:
+        master_operation()
+    else:
+        slave_operation()
