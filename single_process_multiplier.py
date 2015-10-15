@@ -1,4 +1,5 @@
 from random import randint
+import time
 
 X = []
 Y = []
@@ -54,6 +55,7 @@ def multiply_matrix(X, Y):
             for X_row in X]
 
     print Z
+    print('\n')
 
 
 def multiply():
@@ -106,4 +108,22 @@ if __name__ == '__main__':
         2. Multiply matrix
     """
     init_matrix()
+
+    t1 = time.time()
+    print('------------------------------------------------------------------')
+    print('Start time', t1)
+    print('------------------------------------------------------------------')
+    print('\n')
+
     multiply_matrix(X, Y)
+
+    t2 = time.time()
+    print('------------------------------------------------------------------')
+    print('End time', t1)
+    print('------------------------------------------------------------------')
+    print('\n')
+
+    print('------------------------------------------------------------------')
+    print('Time taken', int(t2 - t1))
+    print('------------------------------------------------------------------')
+    print('\n')

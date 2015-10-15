@@ -1,4 +1,6 @@
 from mpi4py import MPI
+from random import randint
+import time
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -19,55 +21,41 @@ def init_matrix():
         3. mtrx3 - output matrix
     """
     global mtrx1
-    mtrx1 = [
-        [1, 2, 3, 4, 5, 6, 9],
-        [5, 6, 7, 8, 4, 3, 5],
-        [9, 10, 11, 12, 3, 2, 2],
-    ]
+    mtrx1 = [[randint(0, 9) for i in range(N)] for j in range(N)]
 
     global mtrx2
-    mtrx2 = [
-        [1, 2, 3],
-        [5, 6, 7],
-        [2, 2, 7],
-        [5, 6, 9],
-        [5, 6, 9],
-        [5, 6, 9],
-        [5, 6, 9],
-    ]
-
-    global mtrx3
-    mtrx3 = [0] * len(mtrx1)
+    mtrx2 = [[randint(0, 9) for i in range(N)] for j in range(N)]
 
 
-def calculate_matrix_row(X, Y):
+def multiply_matrix(X, Y):
     """
-    Generate single row of final matrix. This funcaiont will be called by
-    each and every slave with their matrix data. For an example
+    Generate new matrix by multiplying incoming matrix data.
+    This funcaiont will be called by each and every slave with their matrix
+    data. For an example
 
-    x = [
+    X = [
             [1, 2, 3, 4],
             [3, 2, 3, 7],
         ]
 
-    y = [
+    Y = [
             [1, 2, 3],
             [5, 6, 7],
             [2, 2, 7],
             [5, 6, 9],
         ]
 
-    z = [
+    Z = [
             [(1*1 + 2*5 + 3*2 + 4*5), (1*2 + 2*6 + 3*2 + 4*6), --, --],
             [(3*1 + 2*5 + 3*2 + 7*5), (3*2 + 2*6 + 3*2 + 7*6), --, --]
         ]
 
     Args:
-        x: mtrx1
-        y: mtrx2
+        X: rows of mtrx1
+        Y: whole mtrx2
 
     Returns:
-        z: calculated matrix part
+        Z: calculated matrix part
     """
     Z = [[sum(a * b for a, b in zip(X_row, Y_col)) for Y_col in zip(*Y)]
             for X_row in X]
@@ -77,18 +65,30 @@ def calculate_matrix_row(X, Y):
 
 def distribute_matrix_data():
     """
-    Distribute row of first matrix and whole second matrix to salves, this done
-    via master node. Then salves caculate single row of final matrix and send
-    result back to master
+    Distribute rows of first matrix and whole second matrix to salves, this
+    done via master node. Then salves caculate a sub matrix by multiplying
+    incoming matrix and send result back to master
     """
-    # split matrix according to workers count
-    n = max(1, workers)
-    l = [mtrx1[i:i + n] for i in range(0, len(mtrx1), n)]
+    def split_matrix(seq, p):
+        """
+        Split matrix into small parts according to the no of workers. devided
+        parts will be send to slaves by master node
+        """
+        rows = []
+        n = len(seq) / p
+        r = len(seq) % p
+        b, e = 0, n + min(1, r)
+        for i in range(p):
+            rows.append(seq[b:e])
+            r = max(0, r - 1)
+            b, e = e, e + n + min(1, r)
 
-    print(l)
+        return rows
+
+    rows = split_matrix(mtrx1, workers)
 
     pid = 1
-    for row in l:
+    for row in rows:
         comm.send(row, dest=pid, tag=1)
         comm.send(mtrx2, dest=pid, tag=2)
         pid = pid + 1
@@ -97,18 +97,20 @@ def distribute_matrix_data():
 def assemble_matrix_data():
     """
     Assemble returing valus form salves and generate final matrix. Slaves
-    calculate single row of final matrix
+    calculate single rows of final matrix
     """
+    global mtrx3
+
     pid = 1
-    l = []
     for n in range(workers):
         row = comm.recv(source=pid, tag=pid)
-        l = l + row
-        #mtrx3[pid - 1] = row
-        print('master', rank, row)
+        mtrx3 = mtrx3 + row
         pid = pid + 1
 
-    print(l)
+    print('------------------------------------------------------------------')
+    print(mtrx3)
+    print('------------------------------------------------------------------')
+    print('\n')
 
 
 def master_operation():
@@ -119,7 +121,6 @@ def master_operation():
     """
     distribute_matrix_data()
     assemble_matrix_data()
-    print(mtrx3)
 
 
 def slave_operation():
@@ -133,8 +134,8 @@ def slave_operation():
     x = comm.recv(source=0, tag=1)
     y = comm.recv(source=0, tag=2)
 
-    # calculate single matrx row and send it back to master
-    z = calculate_matrix_row(x, y)
+    # multiply the received matrixes and send the result back to master
+    z = multiply_matrix(x, y)
     comm.send(z, dest=0, tag=rank)
 
 
@@ -144,8 +145,26 @@ if __name__ == '__main__':
         1. initilize matrxies
         2. Master/Salve operations
     """
-    init_matrix()
     if rank == 0:
+        init_matrix()
+
+        t1 = time.time()
+        print('--------------------------------------------------------------')
+        print('Start time', t1)
+        print('--------------------------------------------------------------')
+        print('\n')
+
         master_operation()
+
+        t2 = time.time()
+        print('--------------------------------------------------------------')
+        print('End time', t1)
+        print('--------------------------------------------------------------')
+        print('\n')
+
+        print('--------------------------------------------------------------')
+        print('Time taken', int(t2 - t1))
+        print('--------------------------------------------------------------')
+        print('\n')
     else:
         slave_operation()
