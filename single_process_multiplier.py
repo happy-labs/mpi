@@ -10,7 +10,7 @@ N = 500
 
 def init_matrix():
     """
-    Initialize matrxi from here, we do initialize three matrx from here
+    Initialize matrix from here, we do initialize three matrix from here
         1. mtrx1 - input matrix
         2. mtrx2 - input matrix
         3. mtrx3 - output matrix
@@ -102,7 +102,7 @@ def multiply():
 if __name__ == '__main__':
     """
     Main method here, we have to do
-        1. initilize matrxies
+        1. initialize matrix
         2. Multiply matrix
     """
     init_matrix()
