@@ -9,7 +9,7 @@ mtrx1 = []
 mtrx2 = []
 mtrx3 = []
 
-N = 9
+N = 5
 
 
 def init_matrix():
@@ -72,10 +72,18 @@ def distribute_matrix_data():
     n = max(1, workers)
     rows = [mtrx1[i:i + n] for i in range(0, len(mtrx1), n)]
 
+    # this means matrix devided to un equal parts
+    # we have to deistribute unequl part to master node, master node will do
+    # multiplicaiton on it
+    if len(mtrx1) % workers != 0:
+        comm.send(rows[-1], dest=0, tag=1)
+        comm.send(mtrx2, dest=0, tag=2)
+        del rows[-1]
+
     pid = 1
     for row in rows:
-        comm.send(row, dest=pid, tag=1)
-        comm.send(mtrx2, dest=pid, tag=2)
+        comm.send(row, dest=pid, tag=11)
+        comm.send(mtrx2, dest=pid, tag=22)
         pid = pid + 1
 
 
@@ -92,18 +100,34 @@ def assemble_matrix_data():
         mtrx3 = mtrx3 + row
         pid = pid + 1
 
+    # this means matrix devided to un equal parts
+    # master node also doing some operation here
+    if len(mtrx1) % workers != 0:
+        row = comm.recv(source=0, tag=0)
+        mtrx3 = mtrx3 + row
+
     print(mtrx3)
 
 
 init_matrix()
 if rank == 0:
     distribute_matrix_data()
-    comm.send(234, dest=0, tag=33)
+
+    # this means matrix devided to un equal parts
+    # in here we have to do some calculation in master node as well
+    if len(mtrx1) % workers != 0:
+        x = comm.recv(source=0, tag=1)
+        y = comm.recv(source=0, tag=2)
+
+        # calculate matrx rows and send it back to master
+        z = multiply_matrix(x, y)
+        comm.send(z, dest=0, tag=0)
+
     assemble_matrix_data()
 else:
     # receive data from master node
-    x = comm.recv(source=0, tag=1)
-    y = comm.recv(source=0, tag=2)
+    x = comm.recv(source=0, tag=11)
+    y = comm.recv(source=0, tag=21)
 
     # calculate matrx rows and send it back to master
     z = multiply_matrix(x, y)
