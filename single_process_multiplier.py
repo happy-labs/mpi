@@ -1,28 +1,24 @@
+from random import randint
+
 X = [
     [1, 2, 3, 4],
     [5, 6, 7, 8],
 ]
 
+N = 500
 
-Y = [
-    [1, 2, 3],
-    [5, 6, 7],
-    [2, 2, 7],
-    [5, 6, 9],
-]
+mtrx1 = [[randint(0, 9) for i in range(N)] for j in range(N)]
+mtrx2 = [[randint(0, 9) for i in range(N)] for j in range(N)]
 
-Z = [[0] * len(Y[0]) for i in range(len(X))]
-
-print(Z)
+Z = [[0] * N for i in range(N)]
 
 i = 0
-for a in X:
+for a in mtrx1:
     j = 0
     for b in a:
         k = 0
-        for c in Y[j]:
+        for c in mtrx2[j]:
             Z[i][k] = Z[i][k] + (b * c)
-            print(b, c, i, k)
             k = k + 1
         j = j + 1
     i = i + 1
